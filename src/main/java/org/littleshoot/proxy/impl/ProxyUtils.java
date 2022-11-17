@@ -220,7 +220,7 @@ public class ProxyUtils {
     public static HttpResponse copyMutableResponseFields(
             final HttpResponse original) {
 
-        HttpResponse copy = null;
+        HttpResponse copy;
         if (original instanceof DefaultFullHttpResponse) {
             ByteBuf content = ((DefaultFullHttpResponse) original).content();
             copy = new DefaultFullHttpResponse(original.getProtocolVersion(),
@@ -304,7 +304,7 @@ public class ProxyUtils {
             final String key) {
         final String throttle = props.getProperty(key);
         if (StringUtils.isNotBlank(throttle)) {
-            return throttle.trim().equalsIgnoreCase("true");
+            return "true".equalsIgnoreCase(throttle.trim());
         }
         return false;
     }
@@ -313,7 +313,7 @@ public class ProxyUtils {
             final String key) {
         final String throttle = props.getProperty(key);
         if (StringUtils.isNotBlank(throttle)) {
-            return throttle.trim().equalsIgnoreCase("true");
+            return "true".equalsIgnoreCase(throttle.trim());
         }
         return true;
     }
@@ -383,10 +383,10 @@ public class ProxyUtils {
                 return true;
             }
 
-            switch (code) {
-                case 204: case 205: case 304:
-                    return true;
-            }
+            return switch (code) {
+                case 204, 205, 304 -> true;
+                default -> false;
+            };
         }
         return false;
     }
@@ -655,10 +655,10 @@ public class ProxyUtils {
                 // latter regex should take care of the dangling comma case when
                 // 'sdch' was the first element in the list and there are other
                 // encodings.
-                encoding = encoding.replaceAll(",? *(sdch|SDCH)", "").replaceFirst("^ *, *", "");
+                String res = encoding.replaceAll(",? *(sdch|SDCH)", "").replaceFirst("^ *, *", "");
 
-                if (StringUtils.isNotBlank(encoding)) {
-                    headers.add(HttpHeaders.Names.ACCEPT_ENCODING, encoding);
+                if (StringUtils.isNotBlank(res)) {
+                    headers.add(HttpHeaders.Names.ACCEPT_ENCODING, res);
                 }
             }
         }

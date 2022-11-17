@@ -112,7 +112,7 @@ class ConnectionFlow {
         final ProxyConnection connection = currentStep.getConnection();
         final ProxyConnectionLogger LOG = connection.getLOG();
 
-        LOG.debug("Processing connection flow step: {}", currentStep);
+        LOG.LogDebug("Processing connection flow step: {}", currentStep);
         connection.become(currentStep.getState());
         suppressInitialRequest = suppressInitialRequest
                 || currentStep.shouldSuppressInitialRequest();
@@ -139,16 +139,17 @@ class ConnectionFlow {
     private void doProcessCurrentStep(final ProxyConnectionLogger LOG) {
         currentStep.execute().addListener(
                 new GenericFutureListener<Future<?>>() {
+                    @Override
                     public void operationComplete(
                             io.netty.util.concurrent.Future<?> future)
                             throws Exception {
                         synchronized (connectLock) {
                             if (future.isSuccess()) {
-                                LOG.debug("ConnectionFlowStep succeeded");
+                                LOG.LogDebug("ConnectionFlowStep succeeded");
                                 currentStep
                                         .onSuccess(ConnectionFlow.this);
                             } else {
-                                LOG.debug("ConnectionFlowStep failed",
+                                LOG.LogDebug("ConnectionFlowStep failed",
                                         future.cause());
                                 fail(future.cause());
                             }
@@ -163,7 +164,7 @@ class ConnectionFlow {
      */
     void succeed() {
         synchronized (connectLock) {
-            serverConnection.getLOG().debug(
+            serverConnection.getLOG().LogDebug(
                     "Connection flow completed successfully: {}", currentStep);
             serverConnection.connectionSucceeded(!suppressInitialRequest);
             notifyThreadsWaitingForConnection();

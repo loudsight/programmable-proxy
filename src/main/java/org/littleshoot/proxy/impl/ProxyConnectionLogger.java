@@ -52,37 +52,37 @@ class ProxyConnectionLogger {
         }
     }
 
-    protected void warn(String message, Object... params) {
+    protected void logWarn(String message, Object... params) {
         if (logger.isWarnEnabled()) {
             dispatch.doLog(LocationAwareLogger.WARN_INT, message, params, null);
         }
     }
 
-    protected void warn(String message, Throwable t) {
+    protected void logWarn(String message, Throwable t) {
         if (logger.isWarnEnabled()) {
             dispatch.doLog(LocationAwareLogger.WARN_INT, message, null, t);
         }
     }
 
-    protected void info(String message, Object... params) {
+    protected void LogInfo(String message, Object... params) {
         if (logger.isInfoEnabled()) {
             dispatch.doLog(LocationAwareLogger.INFO_INT, message, params, null);
         }
     }
 
-    protected void info(String message, Throwable t) {
+    protected void LogInfo(String message, Throwable t) {
         if (logger.isInfoEnabled()) {
             dispatch.doLog(LocationAwareLogger.INFO_INT, message, null, t);
         }
     }
 
-    protected void debug(String message, Object... params) {
+    protected void LogDebug(String message, Object... params) {
         if (logger.isDebugEnabled()) {
             dispatch.doLog(LocationAwareLogger.DEBUG_INT, message, params, null);
         }
     }
 
-    protected void debug(String message, Throwable t) {
+    protected void LogDebug(String message, Throwable t) {
         if (logger.isDebugEnabled()) {
             dispatch.doLog(LocationAwareLogger.DEBUG_INT, message, null, t);
         }

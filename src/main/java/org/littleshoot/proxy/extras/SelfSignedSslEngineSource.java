@@ -1,9 +1,8 @@
 package org.littleshoot.proxy.extras;
 
 import com.google.common.io.ByteStreams;
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 import org.littleshoot.proxy.SslEngineSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -28,8 +27,8 @@ import java.util.Arrays;
  * file doesn't yet exist.
  */
 public class SelfSignedSslEngineSource implements SslEngineSource {
-    private static final Logger LOG = LoggerFactory
-            .getLogger(SelfSignedSslEngineSource.class);
+    private static final LoggingHelper LOG = LoggingHelper
+            .wrap(SelfSignedSslEngineSource.class);
 
     private static final String ALIAS = "littleproxy";
     private static final String PASSWORD = "Be Your Own Lantern";
@@ -81,7 +80,7 @@ public class SelfSignedSslEngineSource implements SslEngineSource {
 
     private void initializeKeyStore() {
         if (keyStoreFile.isFile()) {
-            LOG.info("Not deleting keystore");
+            LOG.logInfo("Not deleting keystore");
             return;
         }
 
@@ -118,7 +117,7 @@ public class SelfSignedSslEngineSource implements SslEngineSource {
                     .getInstance(algorithm);
             tmf.init(ks);
 
-            TrustManager[] trustManagers = null;
+            TrustManager[] trustManagers;
             if (!trustAllServers) {
                 trustManagers = tmf.getTrustManagers();
             } else {
@@ -143,7 +142,7 @@ public class SelfSignedSslEngineSource implements SslEngineSource {
                 } };
             }
             
-            KeyManager[] keyManagers = null;
+            KeyManager[] keyManagers;
             if (sendCerts) {
                 keyManagers = kmf.getKeyManagers();
             } else {
@@ -160,7 +159,7 @@ public class SelfSignedSslEngineSource implements SslEngineSource {
     }
 
     private String nativeCall(final String... commands) {
-        LOG.info("Running '{}'", Arrays.asList(commands));
+        LOG.logInfo("Running '{}'", Arrays.asList(commands));
         final ProcessBuilder pb = new ProcessBuilder(commands);
         try {
             final Process process = pb.start();
@@ -169,11 +168,11 @@ public class SelfSignedSslEngineSource implements SslEngineSource {
             byte[] data = ByteStreams.toByteArray(is);
             String dataAsString = new String(data);
 
-            LOG.info("Completed native call: '{}'\nResponse: '" + dataAsString + "'",
+            LOG.logInfo("Completed native call: '{}'\nResponse: '" + dataAsString + "'",
                     Arrays.asList(commands));
             return dataAsString;
         } catch (final IOException e) {
-            LOG.error("Error running commands: " + Arrays.asList(commands), e);
+            LOG.logError("Error running commands: " + Arrays.asList(commands), e);
             return "";
         }
     }

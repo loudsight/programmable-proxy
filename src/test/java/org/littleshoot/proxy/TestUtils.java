@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 import com.sun.management.UnixOperatingSystemMXBean;
 
 import org.apache.http.HttpHost;
@@ -38,6 +39,7 @@ import org.littleshoot.proxy.extras.SelfSignedSslEngineSource;
 
 public class TestUtils {
 
+    private static final LoggingHelper LOG = LoggingHelper.wrap(TestUtils.class);
     private TestUtils() {
     }
 
@@ -79,11 +81,11 @@ public class TestUtils {
                     HttpServletRequest request, HttpServletResponse response)
                     throws IOException, ServletException {
                 if (request.getRequestURI().contains("hang")) {
-                    System.out.println("Hanging as requested");
+                    LOG.logInfo("Hanging as requested");
                     try {
                         Thread.sleep(90000);
                     } catch (InterruptedException ie) {
-                        System.out.println("Stopped hanging due to interruption");
+                        LOG.logInfo("Stopped hanging due to interruption");
                     }
                 }
                 
@@ -93,7 +95,7 @@ public class TestUtils {
                 while (in.read() != -1) {
                     numberOfBytesRead += 1;
                 }
-                System.out.println("Done reading # of bytes: "
+                LOG.logInfo("Done reading # of bytes: "
                         + numberOfBytesRead);
                 response.setStatus(HttpServletResponse.SC_OK);
                 baseRequest.setHandled(true);
@@ -154,11 +156,11 @@ public class TestUtils {
                                HttpServletRequest request, HttpServletResponse response)
                     throws IOException, ServletException {
                 if (request.getRequestURI().contains("hang")) {
-                    System.out.println("Hanging as requested");
+                    LOG.logInfo("Hanging as requested");
                     try {
                         Thread.sleep(90000);
                     } catch (InterruptedException ie) {
-                        System.out.println("Stopped hanging due to interruption");
+                        LOG.logInfo("Stopped hanging due to interruption");
                     }
                 }
 
@@ -168,7 +170,7 @@ public class TestUtils {
                 while (in.read() != -1) {
                     numberOfBytesRead += 1;
                 }
-                System.out.println("Done reading # of bytes: "
+                LOG.logInfo("Done reading # of bytes: "
                         + numberOfBytesRead);
                 response.setStatus(HttpServletResponse.SC_OK);
                 baseRequest.setHandled(true);
@@ -354,7 +356,7 @@ public class TestUtils {
                 .getHeapMemoryUsage();
         MemoryUsage muNH = ManagementFactory.getMemoryMXBean()
                 .getNonHeapMemoryUsage();
-        System.out.println("Init :" + mu.getInit() + "\nMax :" + mu.getMax()
+        LOG.logInfo("Init :" + mu.getInit() + "\nMax :" + mu.getMax()
                 + "\nUsed :" + mu.getUsed() + "\nCommitted :"
                 + mu.getCommitted() + "\nInit NH :" + muNH.getInit()
                 + "\nMax NH :" + muNH.getMax() + "\nUsed NH:" + muNH.getUsed()

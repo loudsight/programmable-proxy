@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
 
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
@@ -20,6 +21,7 @@ import static org.junit.Assume.assumeTrue;
  * counts.
  */
 public class IdleTest {
+    private static final LoggingHelper LOG = LoggingHelper.wrap(IdleTest.class);
     private static final int NUMBER_OF_CONNECTIONS_TO_OPEN = 2000;
 
     private Server webServer;
@@ -58,8 +60,7 @@ public class IdleTest {
 
     @Test
     public void testFileDescriptorCount() throws Exception {
-        System.out
-                .println("------------------ Memory Usage At Beginning ------------------");
+        LOG.logInfo("------------------ Memory Usage At Beginning ------------------");
         long initialFileDescriptors = TestUtils.getOpenFileDescriptorsAndPrintMemoryUsage();
         Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(
                 "127.0.0.1", proxyServer.getListenAddress().getPort()));
@@ -69,15 +70,13 @@ public class IdleTest {
         }
 
         System.gc();
-        System.out
-                .println("\n\n------------------ Memory Usage Before Idle Timeout ------------------");
+        LOG.logInfo("\n\n------------------ Memory Usage Before Idle Timeout ------------------");
 
         long fileDescriptorsWhileConnectionsOpen = TestUtils.getOpenFileDescriptorsAndPrintMemoryUsage();
         Thread.sleep(10000);
 
         System.gc();
-        System.out
-                .println("\n\n------------------ Memory Usage After Idle Timeout ------------------");
+        LOG.logInfo("\n\n------------------ Memory Usage After Idle Timeout ------------------");
         long fileDescriptorsAfterConnectionsClosed = TestUtils.getOpenFileDescriptorsAndPrintMemoryUsage();
 
         double fdDeltaToOpen = fileDescriptorsWhileConnectionsOpen

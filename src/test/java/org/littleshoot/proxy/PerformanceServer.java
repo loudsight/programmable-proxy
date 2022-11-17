@@ -1,5 +1,6 @@
 package org.littleshoot.proxy;
 
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -12,6 +13,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
  * perfsite folder.
  */
 public class PerformanceServer {
+    private static final LoggingHelper LOG =LoggingHelper.wrap(PerformanceServer.class);
     public void run(int port) throws Exception {
         Server server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
@@ -30,7 +32,7 @@ public class PerformanceServer {
         server.setHandler(handlers);
 
         server.start();
-        System.out.println("Started performance file server at port: " + port);
+        LOG.logInfo("Started performance file server at port: " + port);
         server.join();
     }
 

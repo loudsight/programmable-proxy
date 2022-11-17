@@ -206,7 +206,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     @Override
     protected void read(Object msg) {
         if (isConnecting()) {
-            LOG.debug(
+            LOG.LogDebug(
                     "In the middle of connecting, forwarding message to connection flow: {}",
                     msg);
             this.connectionFlow.read(msg);
@@ -217,10 +217,10 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
 
     @Override
     protected ConnectionState readHTTPInitial(HttpResponse httpResponse) {
-        LOG.debug("Received raw response: {}", httpResponse);
+        LOG.LogDebug("Received raw response: {}", httpResponse);
 
         if (httpResponse.getDecoderResult().isFailure()) {
-            LOG.debug("Could not parse response from server. Decoder result: {}", httpResponse.getDecoderResult().toString());
+            LOG.LogDebug("Could not parse response from server. Decoder result: {}", httpResponse.getDecoderResult().toString());
 
             // create a "substitute" Bad Gateway response from the server, since we couldn't understand what the actual
             // response from the server was. set the keep-alive on the substitute response to false so the proxy closes
@@ -313,26 +313,26 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
 
     @Override
     void write(Object msg) {
-        LOG.debug("Requested write of {}", msg);
+        LOG.LogDebug("Requested write of {}", msg);
 
         if (msg instanceof ReferenceCounted) {
-            LOG.debug("Retaining reference counted message");
+            LOG.LogDebug("Retaining reference counted message");
             ((ReferenceCounted) msg).retain();
         }
 
         if (is(DISCONNECTED) && msg instanceof HttpRequest) {
-            LOG.debug("Currently disconnected, connect and then write the message");
+            LOG.LogDebug("Currently disconnected, connect and then write the message");
             connectAndWrite((HttpRequest) msg);
         } else {
             if (isConnecting()) {
                 synchronized (connectLock) {
                     if (isConnecting()) {
-                        LOG.debug("Attempted to write while still in the process of connecting, waiting for connection.");
+                        LOG.LogDebug("Attempted to write while still in the process of connecting, waiting for connection.");
                         clientConnection.stopReading();
                         try {
                             connectLock.wait(30000);
                         } catch (InterruptedException ie) {
-                            LOG.warn("Interrupted while waiting for connect monitor");
+                            LOG.logWarn("Interrupted while waiting for connect monitor");
                         }
                     }
                 }
@@ -341,11 +341,11 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             // only write this message if a connection was established and is not in the process of disconnecting or
             // already disconnected
             if (isConnecting() || getCurrentState().isDisconnectingOrDisconnected()) {
-                LOG.debug("Connection failed or timed out while waiting to write message to server. Message will be discarded: {}", msg);
+                LOG.LogDebug("Connection failed or timed out while waiting to write message to server. Message will be discarded: {}", msg);
                 return;
             }
 
-            LOG.debug("Using existing connection to: {}", remoteAddress);
+            LOG.LogDebug("Using existing connection to: {}", remoteAddress);
             doWrite(msg);
         }
     };
@@ -433,17 +433,17 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
                 // IOExceptions are expected errors, for example when a server drops the connection. rather than flood
                 // the logs with stack traces for these expected exceptions, log the message at the INFO level and the
                 // stack trace at the DEBUG level.
-                LOG.info("An IOException occurred on ProxyToServerConnection: " + cause.getMessage());
-                LOG.debug("An IOException occurred on ProxyToServerConnection", cause);
+                LOG.LogInfo("An IOException occurred on ProxyToServerConnection: " + cause.getMessage());
+                LOG.LogDebug("An IOException occurred on ProxyToServerConnection", cause);
             } else if (cause instanceof RejectedExecutionException) {
-                LOG.info("An executor rejected a read or write operation on the ProxyToServerConnection (this is normal if the proxy is shutting down). Message: " + cause.getMessage());
-                LOG.debug("A RejectedExecutionException occurred on ProxyToServerConnection", cause);
+                LOG.LogInfo("An executor rejected a read or write operation on the ProxyToServerConnection (this is normal if the proxy is shutting down). Message: " + cause.getMessage());
+                LOG.LogDebug("A RejectedExecutionException occurred on ProxyToServerConnection", cause);
             } else {
                 LOG.error("Caught an exception on ProxyToServerConnection", cause);
             }
         } finally {
             if (!is(DISCONNECTED)) {
-                LOG.info("Disconnecting open connection to server");
+                LOG.LogInfo("Disconnecting open connection to server");
                 disconnect();
             }
         }
@@ -501,7 +501,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
      * @param response
      */
     private void rememberCurrentResponse(HttpResponse response) {
-        LOG.debug("Remembering the current response.");
+        LOG.LogDebug("Remembering the current response.");
         // We need to make a copy here because the response will be
         // modified in various ways before we need to do things like
         // analyze response headers for whether or not to close the
@@ -526,7 +526,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
      * @param initialRequest the current HTTP request being handled
      */
     private void connectAndWrite(HttpRequest initialRequest) {
-        LOG.debug("Starting new connection to: {}", remoteAddress);
+        LOG.LogDebug("Starting new connection to: {}", remoteAddress);
 
         // Remember our initial request so that we can write it after connecting
         this.initialRequest = initialRequest;
@@ -602,7 +602,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
 
             switch (transportProtocol) {
             case TCP:
-                LOG.debug("Connecting to server with TCP");
+                LOG.LogDebug("Connecting to server with TCP");
                 cb.channelFactory(new ChannelFactory<Channel>() {
                     @Override
                     public Channel newChannel() {
@@ -611,7 +611,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
                 });
                 break;
             case UDT:
-                LOG.debug("Connecting to server with UDT");
+                LOG.LogDebug("Connecting to server with UDT");
                 cb.channelFactory(NioUdtProvider.BYTE_CONNECTOR)
                         .option(ChannelOption.SO_REUSEADDR, true);
                 break;
@@ -641,7 +641,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     private ConnectionFlowStep HTTPCONNECTWithChainedProxy = new ConnectionFlowStep(
             this, AWAITING_CONNECT_OK) {
         protected Future<?> execute() {
-            LOG.debug("Handling CONNECT request through Chained Proxy");
+            LOG.LogDebug("Handling CONNECT request through Chained Proxy");
             chainedProxy.filterRequest(initialRequest);
             MitmManager mitmManager = proxyServer.getMitmManager();
             boolean isMitmEnabled = mitmManager != null;
@@ -753,7 +753,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             // unfortunately java does not expose the specific TLS alert number (112), so we have to look for the
             // unrecognized_name string in the exception's message
             if (cause.getMessage() != null && cause.getMessage().contains("unrecognized_name")) {
-                LOG.debug("Failed to connect to server due to an unrecognized_name SSL warning. Retrying connection without SNI.");
+                LOG.LogDebug("Failed to connect to server due to an unrecognized_name SSL warning. Retrying connection without SNI.");
 
                 // disable SNI, re-setup the connection, and restart the connection flow
                 disableSni = true;
@@ -769,17 +769,17 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
         disableSni = false;
 
         if (chainedProxy != null) {
-            LOG.info("Connection to upstream server via chained proxy failed", cause);
+            LOG.LogInfo("Connection to upstream server via chained proxy failed", cause);
             // Let the ChainedProxy know that we were unable to connect
             chainedProxy.connectionFailed(cause);
         } else {
-            LOG.info("Connection to upstream server failed", cause);
+            LOG.LogInfo("Connection to upstream server failed", cause);
         }
 
         // attempt to connect using a chained proxy, if available
         chainedProxy = availableChainedProxies.poll();
         if (chainedProxy != null) {
-            LOG.info("Retrying connecting using the next available chained proxy");
+            LOG.LogInfo("Retrying connecting using the next available chained proxy");
 
             resetConnectionForRetry();
 
@@ -925,10 +925,10 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
                 shouldForwardInitialRequest);
 
         if (shouldForwardInitialRequest) {
-            LOG.debug("Writing initial request: {}", initialRequest);
+            LOG.LogDebug("Writing initial request: {}", initialRequest);
             write(initialRequest);
         } else {
-            LOG.debug("Dropping initial request: {}", initialRequest);
+            LOG.LogDebug("Dropping initial request: {}", initialRequest);
         }
 
         // we're now done with the initialRequest: it's either been forwarded to the upstream server (HTTP requests), or
@@ -1017,7 +1017,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
                     tracker.requestSentToServer(flowContext, httpRequest);
                 }
             } catch (Throwable t) {
-                LOG.warn("Error while invoking ActivityTracker on request", t);
+                LOG.logWarn("Error while invoking ActivityTracker on request", t);
             }
 
             currentFilters.proxyToServerRequestSending();

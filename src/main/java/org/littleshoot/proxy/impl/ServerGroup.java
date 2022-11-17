@@ -1,12 +1,11 @@
 package org.littleshoot.proxy.impl;
 
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.udt.nio.NioUdtProvider;
 import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.TransportProtocol;
 import org.littleshoot.proxy.UnknownTransportProtocolException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * ServerGroup using {@link #unregisterProxyServer(HttpProxyServer, boolean)}.
  */
 public class ServerGroup {
-    private static final Logger log = LoggerFactory.getLogger(ServerGroup.class);
+    private static final LoggingHelper log = LoggingHelper.wrap(ServerGroup.class);
 
     /**
      * The default number of threads to accept incoming requests from clients. (Requests are serviced by worker threads,
@@ -85,7 +84,7 @@ public class ServerGroup {
         if (ProxyUtils.isUdtAvailable()) {
             TRANSPORT_PROTOCOL_SELECTOR_PROVIDERS.put(TransportProtocol.UDT, NioUdtProvider.BYTE_PROVIDER);
         } else {
-            log.debug("UDT provider not found on classpath. UDT transport will not be available.");
+            log.logDebug("UDT provider not found on classpath. UDT transport will not be available.");
         }
     }
 
@@ -133,7 +132,7 @@ public class ServerGroup {
         if (protocolThreadPools.get(protocol) == null) {
             synchronized (THREAD_POOL_INIT_LOCK) {
                 if (protocolThreadPools.get(protocol) == null) {
-                    log.debug("Initializing thread pools for {} with {} acceptor threads, {} incoming worker threads, and {} outgoing worker threads",
+                    log.logDebug("Initializing thread pools for {} with {} acceptor threads, {} incoming worker threads, and {} outgoing worker threads",
                             protocol, incomingAcceptorThreads, incomingWorkerThreads, outgoingWorkerThreads);
 
                     SelectorProvider selectorProvider = TRANSPORT_PROTOCOL_SELECTOR_PROVIDERS.get(protocol);
@@ -184,15 +183,15 @@ public class ServerGroup {
         synchronized (SERVER_REGISTRATION_LOCK) {
             boolean wasRegistered = registeredServers.remove(proxyServer);
             if (!wasRegistered) {
-                log.warn("Attempted to unregister proxy server from ServerGroup that it was not registered with. Was the proxy unregistered twice?");
+                log.logWarn("Attempted to unregister proxy server from ServerGroup that it was not registered with. Was the proxy unregistered twice?");
             }
 
             if (registeredServers.isEmpty()) {
-                log.debug("Proxy server unregistered from ServerGroup. No proxy servers remain registered, so shutting down ServerGroup.");
+                log.logDebug("Proxy server unregistered from ServerGroup. No proxy servers remain registered, so shutting down ServerGroup.");
 
                 shutdown(graceful);
             } else {
-                log.debug("Proxy server unregistered from ServerGroup. Not shutting down ServerGroup ({} proxy servers remain registered).", registeredServers.size());
+                log.logDebug("Proxy server unregistered from ServerGroup. Not shutting down ServerGroup ({} proxy servers remain registered).", registeredServers.size());
             }
         }
     }
@@ -204,12 +203,12 @@ public class ServerGroup {
      */
     private void shutdown(boolean graceful) {
         if (!stopped.compareAndSet(false, true)) {
-            log.info("Shutdown requested, but ServerGroup is already stopped. Doing nothing.");
+            log.logInfo("Shutdown requested, but ServerGroup is already stopped. Doing nothing.");
 
             return;
         }
 
-        log.info("Shutting down server group event loops " + (graceful ? "(graceful)" : "(non-graceful)"));
+        log.logInfo("Shutting down server group event loops " + (graceful ? "(graceful)" : "(non-graceful)"));
 
         // loop through all event loops managed by this server group. this includes acceptor and worker event loops
         // for both TCP and UDP transport protocols.
@@ -234,12 +233,12 @@ public class ServerGroup {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
 
-                    log.warn("Interrupted while shutting down event loop");
+                    log.logWarn("Interrupted while shutting down event loop");
                 }
             }
         }
 
-        log.debug("Done shutting down server group");
+        log.logDebug("Done shutting down server group");
     }
 
     /**

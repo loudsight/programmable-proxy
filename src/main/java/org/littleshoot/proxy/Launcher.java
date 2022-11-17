@@ -1,5 +1,6 @@
 package org.littleshoot.proxy;
 
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -12,8 +13,6 @@ import org.apache.log4j.xml.DOMConfigurator;
 import org.littleshoot.proxy.extras.SelfSignedMitmManager;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import org.littleshoot.proxy.impl.ProxyUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -24,7 +23,7 @@ import java.util.Arrays;
  */
 public class Launcher {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Launcher.class);
+    private static final LoggingHelper LOG = LoggingHelper.wrap(Launcher.class);
 
     private static final String OPTION_DNSSEC = "dnssec";
 
@@ -44,7 +43,7 @@ public class Launcher {
      */
     public static void main(final String... args) {
         pollLog4JConfigurationFileIfAvailable();
-        LOG.info("Running LittleProxy with args: {}", Arrays.asList(args));
+        LOG.logInfo("Running LittleProxy with args: {}", Arrays.asList(args));
         final Options options = new Options();
         options.addOption(null, OPTION_DNSSEC, true,
                 "Request and verify DNSSEC signatures.");
@@ -87,7 +86,7 @@ public class Launcher {
         }
 
 
-        System.out.println("About to start server on port: " + port);
+        LOG.logInfo("About to start server on port: " + port);
         HttpProxyServerBootstrap bootstrap = DefaultHttpProxyServer
                 .bootstrapFromFile("./littleproxy.properties")
                 .withPort(port)
@@ -99,17 +98,17 @@ public class Launcher {
         }
 
         if (cmd.hasOption(OPTION_MITM)) {
-            LOG.info("Running as Man in the Middle");
+            LOG.logInfo("Running as Man in the Middle");
             bootstrap.withManInTheMiddle(new SelfSignedMitmManager());
         }
         
         if (cmd.hasOption(OPTION_DNSSEC)) {
             final String val = cmd.getOptionValue(OPTION_DNSSEC);
             if (ProxyUtils.isTrue(val)) {
-                LOG.info("Using DNSSEC");
+                LOG.logInfo("Using DNSSEC");
                 bootstrap.withUseDnsSec(true);
             } else if (ProxyUtils.isFalse(val)) {
-                LOG.info("Not using DNSSEC");
+                LOG.logInfo("Not using DNSSEC");
                 bootstrap.withUseDnsSec(false);
             } else {
                 printHelp(options, "Unexpected value for " + OPTION_DNSSEC
@@ -118,15 +117,15 @@ public class Launcher {
             }
         }
 
-        System.out.println("About to start...");
+        LOG.logInfo("About to start...");
         bootstrap.start();
     }
 
     private static void printHelp(final Options options,
             final String errorMessage) {
         if (!StringUtils.isBlank(errorMessage)) {
-            LOG.error(errorMessage);
-            System.err.println(errorMessage);
+            LOG.logError(errorMessage);
+            LOG.logError(errorMessage);
         }
 
         final HelpFormatter formatter = new HelpFormatter();

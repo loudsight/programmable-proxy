@@ -105,7 +105,7 @@ abstract class ConnectionFlowStep {
      *            the message read from the underlying connection
      */
     void read(ConnectionFlow flow, Object msg) {
-        LOG.debug("Received message while in the middle of connecting: {}", msg);
+        LOG.LogDebug("Received message while in the middle of connecting: {}", msg);
     }
 
     @Override

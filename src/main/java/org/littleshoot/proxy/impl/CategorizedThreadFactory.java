@@ -1,7 +1,6 @@
 package org.littleshoot.proxy.impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A ThreadFactory that adds LittleProxy-specific information to the threads' names.
  */
 public class CategorizedThreadFactory implements ThreadFactory {
-    private static final Logger log = LoggerFactory.getLogger(CategorizedThreadFactory.class);
+    private static final LoggingHelper log = LoggingHelper.wrap(CategorizedThreadFactory.class);
 
     private final String name;
     private final String category;
@@ -24,7 +23,7 @@ public class CategorizedThreadFactory implements ThreadFactory {
     private static final Thread.UncaughtExceptionHandler UNCAUGHT_EXCEPTION_HANDLER = new Thread.UncaughtExceptionHandler() {
         @Override
         public void uncaughtException(Thread t, Throwable e) {
-            log.error("Uncaught throwable in thread: {}", t.getName(), e);
+            log.logError("Uncaught throwable in thread: {}", t.getName(), e);
         }
     };
 

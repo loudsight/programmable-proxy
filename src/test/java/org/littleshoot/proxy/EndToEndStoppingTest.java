@@ -1,5 +1,6 @@
 package org.littleshoot.proxy;
 
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import org.apache.commons.io.IOUtils;
@@ -19,8 +20,6 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -33,10 +32,10 @@ import static org.mockserver.model.HttpResponse.response;
 /**
  * End to end test making sure the proxy is able to service simple HTTP requests
  * and stop at the end. Made into a unit test from isopov and nasis's
- * contributions at: https://github.com/adamfisk/LittleProxy/issues/36
+ * contributions at: https://github.com/loudsight/programmable-proxy/issues/36
  */
 public class EndToEndStoppingTest {
-    private static final Logger log = LoggerFactory.getLogger(EndToEndStoppingTest.class);
+    private static final LoggingHelper LOG = LoggingHelper.wrap(EndToEndStoppingTest.class);
 
     private ClientAndServer mockServer;
     private int mockServerPort;
@@ -82,10 +81,10 @@ public class EndToEndStoppingTest {
         driver.get(urlString);
 
         driver.close();
-        System.out.println("Driver closed");
+        LOG.logInfo("Driver closed");
 
         proxyServer.abort();
-        System.out.println("Proxy stopped");
+        LOG.logInfo("Proxy stopped");
     }
 
     @Test
@@ -119,7 +118,7 @@ public class EndToEndStoppingTest {
          * {
          * 
          * @Override public void filter(HttpRequest httpRequest) {
-         * System.out.println("Request went through proxy"); } });
+         * LOG.logInfo("Request went through proxy"); } });
          */
 
         final HttpProxyServer proxy = DefaultHttpProxyServer.bootstrap()
@@ -131,7 +130,7 @@ public class EndToEndStoppingTest {
                             @Override
                             public io.netty.handler.codec.http.HttpResponse proxyToServerRequest(
                                     HttpObject httpObject) {
-                                System.out.println("Request with through proxy");
+                                LOG.logInfo("Request with through proxy");
                                 return null;
                             }
                         };
@@ -153,10 +152,10 @@ public class EndToEndStoppingTest {
             final String body = IOUtils.toString(entity.getContent());
             EntityUtils.consume(entity);
 
-            log.info("Consuming entity -- got body: {}", body);
+            LOG.logInfo("Consuming entity -- got body: {}", body);
             EntityUtils.consume(response.getEntity());
 
-            log.info("Stopping proxy");
+            LOG.logInfo("Stopping proxy");
         } finally {
             if (proxy != null) {
                 proxy.abort();
