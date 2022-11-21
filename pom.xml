@@ -9,7 +9,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>com.loudsight</groupId>
-        <version>0.0.10.1</version>
+        <version>0.0.10.2</version>
     </parent>
 
     <description>
