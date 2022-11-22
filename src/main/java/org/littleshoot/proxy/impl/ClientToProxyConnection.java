@@ -751,7 +751,7 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
                 LOG.LogInfo("An executor rejected a read or write operation on the ClientToProxyConnection (this is normal if the proxy is shutting down). Message: " + cause.getMessage());
                 LOG.LogDebug("A RejectedExecutionException occurred on ClientToProxyConnection", cause);
             } else {
-                LOG.error("Caught an exception on ClientToProxyConnection", cause);
+                LOG.logError("Caught an exception on ClientToProxyConnection", cause);
             }
         } finally {
             // always disconnect the client when an exception occurs on the channel
@@ -1408,7 +1408,7 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
                 tracker.clientConnected(clientAddress);
             }
         } catch (Exception e) {
-            LOG.error("Unable to recordClientConnected", e);
+            LOG.logError("Unable to recordClientConnected", e);
         }
     }
 
@@ -1421,7 +1421,7 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
                         clientAddress, clientSslSession);
             }
         } catch (Exception e) {
-            LOG.error("Unable to recorClientSSLHandshakeSucceeded", e);
+            LOG.logError("Unable to recorClientSSLHandshakeSucceeded", e);
         }
     }
 
@@ -1434,7 +1434,7 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
                         clientAddress, clientSslSession);
             }
         } catch (Exception e) {
-            LOG.error("Unable to recordClientDisconnected", e);
+            LOG.logError("Unable to recordClientDisconnected", e);
         }
     }
 

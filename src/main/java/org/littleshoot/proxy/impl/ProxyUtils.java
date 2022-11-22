@@ -20,8 +20,6 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -37,6 +35,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
+
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 
 /**
  * Utilities for the proxy.
@@ -61,7 +61,7 @@ public class ProxyUtils {
             "Keep-Alive".toLowerCase(Locale.US)
     );
 
-    private static final Logger LOG = LoggerFactory.getLogger(ProxyUtils.class);
+    private static final LoggingHelper LOG = LoggingHelper.wrap(ProxyUtils.class);
 
     private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
@@ -517,14 +517,14 @@ public class ProxyUtils {
         try {
             return InetAddress.getLocalHost().getHostName();
         } catch (IOException e) {
-            LOG.debug("Ignored exception", e);
+            LOG.logDebug("Ignored exception", e);
         } catch (RuntimeException e) {
             // An exception here must not stop the proxy. Android could throw a
             // runtime exception, since it not allows network access in the main
             // process.
-            LOG.debug("Ignored exception", e);
+            LOG.logDebug("Ignored exception", e);
         }
-        LOG.info("Could not lookup localhost");
+        LOG.logInfo("Could not lookup localhost");
         return null;
     }
 

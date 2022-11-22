@@ -134,11 +134,6 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     private volatile GlobalTrafficShapingHandler trafficHandler;
 
     /**
-     * Minimum size of the adaptive recv buffer when throttling is enabled. 
-     */
-    private static final int MINIMUM_RECV_BUFFER_SIZE_BYTES = 64;
-    
-    /**
      * Create a new ProxyToServerConnection.
      * 
      * @param proxyServer
@@ -218,7 +213,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     @Override
     protected ConnectionState readHTTPInitial(HttpResponse httpResponse) {
         LOG.LogDebug("Received raw response: {}", httpResponse);
-
+        HttpResponse updatedHttpResponse = httpResponse;
         if (httpResponse.getDecoderResult().isFailure()) {
             LOG.LogDebug("Could not parse response from server. Decoder result: {}", httpResponse.getDecoderResult().toString());
 
@@ -229,15 +224,15 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
                     HttpResponseStatus.BAD_GATEWAY,
                     "Unable to parse response from server");
             HttpHeaders.setKeepAlive(substituteResponse, false);
-            httpResponse = substituteResponse;
+            updatedHttpResponse = substituteResponse;
         }
 
         currentFilters.serverToProxyResponseReceiving();
 
-        rememberCurrentResponse(httpResponse);
-        respondWith(httpResponse);
+        rememberCurrentResponse(updatedHttpResponse);
+        respondWith(updatedHttpResponse);
 
-        if (ProxyUtils.isChunked(httpResponse)) {
+        if (ProxyUtils.isChunked(updatedHttpResponse)) {
             return AWAITING_CHUNK;
         } else {
             currentFilters.serverToProxyResponseReceived();
@@ -420,7 +415,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             try {
                 this.chainedProxy.disconnected();
             } catch (Exception e) {
-                LOG.error("Unable to record connectionFailed", e);
+                LOG.logError("Unable to record connectionFailed", e);
             }
         }
         clientConnection.serverDisconnected(this);
@@ -439,7 +434,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
                 LOG.LogInfo("An executor rejected a read or write operation on the ProxyToServerConnection (this is normal if the proxy is shutting down). Message: " + cause.getMessage());
                 LOG.LogDebug("A RejectedExecutionException occurred on ProxyToServerConnection", cause);
             } else {
-                LOG.error("Caught an exception on ProxyToServerConnection", cause);
+                LOG.logError("Caught an exception on ProxyToServerConnection", cause);
             }
         } finally {
             if (!is(DISCONNECTED)) {
@@ -620,8 +615,9 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             }
 
             cb.handler(new ChannelInitializer<Channel>() {
+                @Override
                 protected void initChannel(Channel ch) throws Exception {
-                    initChannelPipeline(ch.pipeline(), initialRequest);
+                    initChannelPipeline(ch.pipeline());
                 };
             });
             cb.option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
@@ -640,6 +636,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
      */
     private ConnectionFlowStep HTTPCONNECTWithChainedProxy = new ConnectionFlowStep(
             this, AWAITING_CONNECT_OK) {
+        @Override
         protected Future<?> execute() {
             LOG.LogDebug("Handling CONNECT request through Chained Proxy");
             chainedProxy.filterRequest(initialRequest);
@@ -671,17 +668,18 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             }
         }
 
+        @Override
         void onSuccess(ConnectionFlow flow) {
             // Do nothing, since we want to wait for the CONNECT response to
             // come back
         }
 
+        @Override
         void read(ConnectionFlow flow, Object msg) {
             // Here we're handling the response from a chained proxy to our
             // earlier CONNECT request
             boolean connectOk = false;
-            if (msg instanceof HttpResponse) {
-                HttpResponse httpResponse = (HttpResponse) msg;
+            if (msg instanceof HttpResponse httpResponse) {
                 int statusCode = httpResponse.getStatus().code();
                 if (statusCode >= 200 && statusCode <= 299) {
                     connectOk = true;
@@ -854,20 +852,18 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     /**
      * Initialize our {@link ChannelPipeline} to connect the upstream server.
      * LittleProxy acts as a client here.
-     * 
+     * <p>
      * A {@link ChannelPipeline} invokes the read (Inbound) handlers in
      * ascending ordering of the list and then the write (Outbound) handlers in
      * descending ordering.
-     * 
+     * <p>
      * Regarding the Javadoc of {@link HttpObjectAggregator} it's needed to have
      * the {@link HttpResponseEncoder} or {@link HttpRequestEncoder} before the
      * {@link HttpObjectAggregator} in the {@link ChannelPipeline}.
-     * 
+     *
      * @param pipeline
-     * @param httpRequest
      */
-    private void initChannelPipeline(ChannelPipeline pipeline,
-            HttpRequest httpRequest) {
+    private void initChannelPipeline(ChannelPipeline pipeline) {
 
         if (trafficHandler != null) {
             pipeline.addLast("global-traffic-shaping", trafficHandler);
@@ -918,7 +914,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             try {
                 this.chainedProxy.connectionSucceeded();
             } catch (Exception e) {
-                LOG.error("Unable to record connectionSucceeded", e);
+                LOG.logError("Unable to record connectionSucceeded", e);
             }
         }
         clientConnection.serverConnectionSucceeded(this,
@@ -948,6 +944,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
      * @throws UnknownHostException if hostAndPort could not be resolved, or if the input string could not be parsed into
      *          a host and port.
      */
+    @SuppressWarnings("PMD.PreserveStackTrace")
     public static InetSocketAddress addressFor(String hostAndPort, DefaultHttpProxyServer proxyServer)
             throws UnknownHostException {
         HostAndPort parsedHostAndPort;

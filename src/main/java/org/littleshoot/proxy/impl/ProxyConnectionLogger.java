@@ -40,13 +40,13 @@ class ProxyConnectionLogger {
         logger = lg;
     }
 
-    protected void error(String message, Object... params) {
+    protected void logError(String message, Object... params) {
         if (logger.isErrorEnabled()) {
             dispatch.doLog(LocationAwareLogger.ERROR_INT, message, params, null);
         }
     }
 
-    protected void error(String message, Throwable t) {
+    protected void logError(String message, Throwable t) {
         if (logger.isErrorEnabled()) {
             dispatch.doLog(LocationAwareLogger.ERROR_INT, message, null, t);
         }

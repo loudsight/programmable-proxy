@@ -31,8 +31,6 @@ import org.littleshoot.proxy.ProxyAuthenticator;
 import org.littleshoot.proxy.SslEngineSource;
 import org.littleshoot.proxy.TransportProtocol;
 import org.littleshoot.proxy.UnknownTransportProtocolException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLEngine;
 import java.io.File;
@@ -45,6 +43,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.loudsight.utilities.helper.logging.LoggingHelper;
 
 /**
  * <p>
@@ -67,7 +67,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 public class DefaultHttpProxyServer implements HttpProxyServer {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultHttpProxyServer.class);
+    private static final LoggingHelper LOG = LoggingHelper.wrap(DefaultHttpProxyServer.class);
 
     /**
      * The interval in ms at which the GlobalTrafficShapingHandler will run to compute and throttle the
@@ -173,7 +173,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
             try (InputStream is = new FileInputStream(propsFile)) {
                 props.load(is);
             } catch (final IOException e) {
-                LOG.warn("Could not load props file?", e);
+                LOG.logWarn("Could not load props file?", e);
             }
         }
 
@@ -431,9 +431,9 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
         // only stop the server if it hasn't already been stopped
         if (stopped.compareAndSet(false, true)) {
             if (graceful) {
-                LOG.info("Shutting down proxy server gracefully");
+                LOG.logInfo("Shutting down proxy server gracefully");
             } else {
-                LOG.info("Shutting down proxy server immediately (non-graceful)");
+                LOG.logInfo("Shutting down proxy server immediately (non-graceful)");
             }
 
             closeAllChannels(graceful);
@@ -447,7 +447,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                 // ignore -- IllegalStateException means the VM is already shutting down
             }
 
-            LOG.info("Done shutting down proxy server");
+            LOG.logInfo("Done shutting down proxy server");
         }
     }
 
@@ -466,7 +466,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
      * @param graceful when false, attempts to shutdown all channels immediately and ignores any channel-closing exceptions
      */
     protected void closeAllChannels(boolean graceful) {
-        LOG.info("Closing all channels " + (graceful ? "(graceful)" : "(non-graceful)"));
+        LOG.logInfo("Closing all channels " + (graceful ? "(graceful)" : "(non-graceful)"));
 
         ChannelGroupFuture future = allChannels.close();
 
@@ -477,22 +477,22 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                LOG.warn("Interrupted while waiting for channels to shut down gracefully.");
+                LOG.logWarn("Interrupted while waiting for channels to shut down gracefully.");
             }
 
             if (!future.isSuccess()) {
                 for (ChannelFuture cf : future) {
                     if (!cf.isSuccess()) {
-                        LOG.info("Unable to close channel.  Cause of failure for {} is {}", cf.channel(), cf.cause());
+                        LOG.logInfo("Unable to close channel.  Cause of failure for {} is {}", cf.channel(), cf.cause());
                     }
                 }
             }
         }
     }
 
-    private HttpProxyServer start() {
+    HttpProxyServer start() {
         if (!serverGroup.isStopped()) {
-            LOG.info("Starting proxy at address: " + this.requestedAddress);
+            LOG.logInfo("Starting proxy at address: " + this.requestedAddress);
 
             serverGroup.registerProxyServer(this);
 
@@ -509,7 +509,9 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                 serverGroup.getClientToProxyAcceptorPoolForTransport(transportProtocol),
                 serverGroup.getClientToProxyWorkerPoolForTransport(transportProtocol));
 
+
         ChannelInitializer<Channel> initializer = new ChannelInitializer<Channel>() {
+            @Override
             protected void initChannel(Channel ch) throws Exception {
                 new ClientToProxyConnection(
                         DefaultHttpProxyServer.this,
@@ -521,7 +523,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
         };
         switch (transportProtocol) {
             case TCP:
-                LOG.info("Proxy listening with TCP transport");
+                LOG.logInfo("Proxy listening with TCP transport");
                 serverBootstrap.channelFactory(new ChannelFactory<ServerChannel>() {
                     @Override
                     public ServerChannel newChannel() {
@@ -530,7 +532,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                 });
                 break;
             case UDT:
-                LOG.info("Proxy listening with UDT transport");
+                LOG.logInfo("Proxy listening with UDT transport");
                 serverBootstrap.channelFactory(NioUdtProvider.BYTE_ACCEPTOR)
                         .option(ChannelOption.SO_BACKLOG, 10)
                         .option(ChannelOption.SO_REUSEADDR, true);
@@ -556,7 +558,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
         }
 
         this.boundAddress = ((InetSocketAddress) future.channel().localAddress());
-        LOG.info("Proxy started at address: " + this.boundAddress);
+        LOG.logInfo("Proxy started at address: " + this.boundAddress);
 
         Runtime.getRuntime().addShutdownHook(jvmShutdownHook);
     }
@@ -596,6 +598,8 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
     // TODO: refactor bootstrap into a separate class
     private static class DefaultHttpProxyServerBootstrap implements HttpProxyServerBootstrap {
+        @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
+        public static final String LOOPBACK_IP = "127.0.0.1";
         private String name = "LittleProxy";
         private ServerGroup serverGroup = null;
         private TransportProtocol transportProtocol = TransportProtocol.TCP;
@@ -741,7 +745,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
         @Override
         @Deprecated
         public HttpProxyServerBootstrap withListenOnAllAddresses(boolean listenOnAllAddresses) {
-            LOG.warn("withListenOnAllAddresses() is deprecated and will be removed in a future release. Use withNetworkInterface().");
+            LOG.logWarn("withListenOnAllAddresses() is deprecated and will be removed in a future release. Use withNetworkInterface().");
             return this;
         }
 
@@ -750,7 +754,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                 SslEngineSource sslEngineSource) {
             this.sslEngineSource = sslEngineSource;
             if (this.mitmManager != null) {
-                LOG.warn("Enabled encrypted inbound connections with man in the middle. "
+                LOG.logWarn("Enabled encrypted inbound connections with man in the middle. "
                         + "These are mutually exclusive - man in the middle will be disabled.");
                 this.mitmManager = null;
             }
@@ -783,7 +787,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                 MitmManager mitmManager) {
             this.mitmManager = mitmManager;
             if (this.sslEngineSource != null) {
-                LOG.warn("Enabled man in the middle with encrypted inbound connections. "
+                LOG.logWarn("Enabled man in the middle with encrypted inbound connections. "
                         + "These are mutually exclusive - encrypted inbound connections will be disabled.");
                 this.sslEngineSource = null;
             }
@@ -914,7 +918,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                 // Binding only to localhost can significantly improve the
                 // security of the proxy.
                 if (allowLocalOnly) {
-                    return new InetSocketAddress("127.0.0.1", port);
+                    return new InetSocketAddress(LOOPBACK_IP, port);
                 } else {
                     return new InetSocketAddress(port);
                 }
